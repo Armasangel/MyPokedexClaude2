@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.uvg.mypokedex.ui.features.home.HomeViewModel
+import com.uvg.mypokedex.ui.features.home.SortBy
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,20 +48,23 @@ fun SearchToolsDialog(
     paddingValues: PaddingValues,
     viewModel: HomeViewModel
 ) {
+    // Cargar las preferencias actuales desde el ViewModel
+    val sortPreferences by viewModel.uiState.collectAsState()
+
     var selectedSortBy by remember { mutableStateOf("Número") }
     var isAscending by remember { mutableStateOf(true) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
-    
+
     val sortOptions = listOf("Número", "Nombre")
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "Herramientas de Búsqueda",
                         style = MaterialTheme.typography.headlineSmall
-                    ) 
+                    )
                 },
                 actions = {
                     IconButton(onClick = onDismiss) {
@@ -93,20 +98,20 @@ fun SearchToolsDialog(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Selector dropdown
                     Text(
                         text = "Ordenar por:",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { isDropdownExpanded = true }
@@ -127,7 +132,7 @@ fun SearchToolsDialog(
                                 contentDescription = "Abrir selector"
                             )
                         }
-                        
+
                         DropdownMenu(
                             expanded = isDropdownExpanded,
                             onDismissRequest = { isDropdownExpanded = false }
@@ -145,7 +150,7 @@ fun SearchToolsDialog(
                     }
                 }
             }
-            
+
             // Card para la dirección de ordenamiento
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -161,11 +166,11 @@ fun SearchToolsDialog(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Radio buttons para ascendente/descendente
                     Row(
                         modifier = Modifier
@@ -187,7 +192,7 @@ fun SearchToolsDialog(
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
-                    
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -210,7 +215,7 @@ fun SearchToolsDialog(
                     }
                 }
             }
-            
+
             // Card con información adicional
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -238,14 +243,20 @@ fun SearchToolsDialog(
                         text = "• Orden: ${if (isAscending) "Ascendente" else "Descendente"}",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(
-                            onClick = { 
+                            onClick = {
+                                // Aplicar los filtros al ViewModel
+                                val sortBy = when (selectedSortBy) {
+                                    "Nombre" -> SortBy.NAME
+                                    else -> SortBy.NUMBER
+                                }
+                                viewModel.applySorting(sortBy, isAscending)
                                 onDismiss()
                             }
                         ) {

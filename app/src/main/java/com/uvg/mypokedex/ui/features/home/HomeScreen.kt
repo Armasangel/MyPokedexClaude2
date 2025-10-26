@@ -1,19 +1,25 @@
 package com.uvg.mypokedex.ui.features.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
@@ -27,6 +33,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,9 +45,14 @@ fun HomeScreen(
     paddingValues: PaddingValues,
     onPokemonClick: (Int) -> Unit,
     onSearchToolsClick: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(
+            LocalContext.current.applicationContext as android.app.Application
+        )
+    )
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isConnected by viewModel.isConnected.collectAsState()
     val gridState = rememberLazyGridState()
 
     // Detectar cuándo llegamos al final para cargar más
@@ -53,7 +66,7 @@ fun HomeScreen(
         }.collect { shouldLoadMore ->
             if (shouldLoadMore && uiState is HomeUiState.Success) {
                 val successState = uiState as HomeUiState.Success
-                if (!successState.isSearchResult) {
+                if (!successState.isSearchResult && isConnected) {
                     viewModel.loadMorePokemon()
                 }
             }
@@ -61,6 +74,11 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Indicador de conexión en la parte superior
+        if (!isConnected) {
+            ConnectionStatusBanner()
+        }
+
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 LoadingState()
@@ -73,74 +91,92 @@ fun HomeScreen(
             is HomeUiState.Error -> {
                 ErrorState(
                     message = state.message,
-                    onRetry = { viewModel.retry() }
+                    onRetry = { viewModel.retry() },
+                    isConnected = isConnected
                 )
             }
 
             is HomeUiState.Success -> {
-                LazyVerticalGrid(
-                    state = gridState,
-                    modifier = Modifier.padding(paddingValues),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    columns = GridCells.Fixed(2)
-                ) {
-                    items(
-                        items = state.pokemonList,
-                        key = { pokemon -> pokemon.id }
-                    ) { pokemon ->
-                        PokemonCard(
-                            pokemon = pokemon,
-                            onClick = { onPokemonClick(pokemon.id) }
-                        )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Banner de conexión
+                    if (!isConnected) {
+                        Spacer(modifier = Modifier.height(48.dp))
                     }
-                }
 
-                // Mostrar mensaje de error si hay (al cargar más)
-                state.errorMessage?.let { errorMsg ->
-                    Box(
+                    LazyVerticalGrid(
+                        state = gridState,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.BottomCenter
+                            .padding(paddingValues)
+                            .weight(1f),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        columns = GridCells.Fixed(2)
                     ) {
-                        Text(
-                            text = errorMsg,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        items(
+                            items = state.pokemonList,
+                            key = { pokemon -> pokemon.id }
+                        ) { pokemon ->
+                            PokemonCard(
+                                pokemon = pokemon,
+                                onClick = { onPokemonClick(pokemon.id) }
+                            )
+                        }
+                    }
+
+                    // Mostrar mensaje de error si hay (al cargar más)
+                    state.errorMessage?.let { errorMsg ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = errorMsg,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
 
             is HomeUiState.LoadingMore -> {
-                LazyVerticalGrid(
-                    state = gridState,
-                    modifier = Modifier.padding(paddingValues),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    columns = GridCells.Fixed(2)
-                ) {
-                    items(
-                        items = state.currentList,
-                        key = { pokemon -> pokemon.id }
-                    ) { pokemon ->
-                        PokemonCard(
-                            pokemon = pokemon,
-                            onClick = { onPokemonClick(pokemon.id) }
-                        )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (!isConnected) {
+                        Spacer(modifier = Modifier.height(48.dp))
                     }
 
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                    LazyVerticalGrid(
+                        state = gridState,
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .weight(1f),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        columns = GridCells.Fixed(2)
+                    ) {
+                        items(
+                            items = state.currentList,
+                            key = { pokemon -> pokemon.id }
+                        ) { pokemon ->
+                            PokemonCard(
+                                pokemon = pokemon,
+                                onClick = { onPokemonClick(pokemon.id) }
+                            )
+                        }
+
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
                         }
                     }
                 }
@@ -157,6 +193,35 @@ fun HomeScreen(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Herramientas de búsqueda"
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConnectionStatusBanner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFFF6B6B))
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.WifiOff,
+                contentDescription = "Sin conexión",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.padding(4.dp))
+            Text(
+                text = "Sin conexión - Mostrando datos en caché",
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
@@ -211,7 +276,7 @@ private fun EmptyState(onRetry: () -> Unit) {
 }
 
 @Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
+private fun ErrorState(message: String, onRetry: () -> Unit, isConnected: Boolean) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -220,6 +285,16 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp)
         ) {
+            if (!isConnected) {
+                Icon(
+                    imageVector = Icons.Default.WifiOff,
+                    contentDescription = "Sin conexión",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             Text(
                 text = "Error",
                 style = MaterialTheme.typography.headlineSmall,

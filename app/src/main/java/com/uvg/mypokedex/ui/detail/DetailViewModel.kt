@@ -1,7 +1,7 @@
 package com.uvg.mypokedex.ui.detail
 
-
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.uvg.mypokedex.data.model.Pokemon
 import com.uvg.mypokedex.data.repository.PokemonRepository
@@ -12,11 +12,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class DetailViewModel(
-    private val repository: PokemonRepository = PokemonRepository()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val repository = PokemonRepository(application.applicationContext)
 
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+
+    // Estado de conexión
+    private val _isConnected = MutableStateFlow(true)
+    val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+
+    init {
+        // Observar el estado de conexión
+        viewModelScope.launch {
+            repository.isConnected.collect { connected ->
+                _isConnected.value = connected
+            }
+        }
+    }
 
     fun loadPokemonDetail(pokemonId: Int) {
         viewModelScope.launch {

@@ -2,15 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlinx-serialization")
-
+    alias(libs.plugins.ksp)
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
     namespace = "com.uvg.mypokedex"
     compileSdk = 35
-
 
     defaultConfig {
         applicationId = "com.uvg.mypokedex"
@@ -53,21 +51,27 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    
+    implementation(libs.androidx.material.icons.extended)  // ← NUEVO
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
-    
+
     // Navigation Compose
     implementation(libs.androidx.navigation.compose)
 
     // Retrofit y OkHttp para networking
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
-    //noinspection UseTomlInstead
-    implementation("com.squareup.okhttp3:okhttp:5.2.1")
+    implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
-    implementation(libs.animated.vector.drawable)
-    implementation(libs.androidx.vectordrawable.animated)
+
+    // Room Database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // DataStore Preferences
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
