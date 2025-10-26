@@ -49,7 +49,6 @@ fun SearchToolsDialog(
     viewModel: HomeViewModel
 ) {
     // Cargar las preferencias actuales desde el ViewModel
-    val sortPreferences by viewModel.uiState.collectAsState()
 
     var selectedSortBy by remember { mutableStateOf("Número") }
     var isAscending by remember { mutableStateOf(true) }

@@ -62,7 +62,7 @@ class DetailViewModel(
 }
 
 sealed class DetailUiState {
-    object Loading : DetailUiState()
+    data object Loading : DetailUiState()
     data class Success(val pokemon: Pokemon) : DetailUiState()
     data class Error(val message: String) : DetailUiState()
 }

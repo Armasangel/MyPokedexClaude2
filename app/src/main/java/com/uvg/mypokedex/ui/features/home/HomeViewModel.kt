@@ -286,8 +286,8 @@ class HomeViewModel(
  * Estados posibles de la pantalla Home
  */
 sealed class HomeUiState {
-    object Loading : HomeUiState()
-    object Empty : HomeUiState()
+    data object Loading : HomeUiState()
+    data object Empty : HomeUiState()
     data class Error(val message: String) : HomeUiState()
     data class Success(
         val pokemonList: List<Pokemon>,
