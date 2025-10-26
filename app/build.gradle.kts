@@ -9,6 +9,7 @@ android {
     namespace = "com.uvg.mypokedex"
     compileSdk = 35
 
+
     defaultConfig {
         applicationId = "com.uvg.mypokedex"
         minSdk = 32
